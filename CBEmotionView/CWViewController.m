@@ -20,18 +20,11 @@
     [super viewDidLoad];
     
     CBEmotionView *emotionView = [[CBEmotionView alloc]
-                                  initWithFrame:CGRectMake(0, 0, 200, 200)
-                                  emotionString:@"</1>中文（Chinese），一般特指汉字</1></1>，即汉语的文字表达形式</2>。但</2>有时广义的</3>概念也有所扩展，即既包括书写</4>体系，也包括发音</4>体系。</1>中文的使用人数在15亿以上，范围包括中国（含香港、澳门、台湾地区）、新加坡、马来西亚、印度尼西亚、泰国、越南、柬埔寨、缅甸以及世界各地的华人社区。(</2</1>)"];
+        initWithFrame:CGRectMake(0, 0, 200, 200)
+        emotionString:@"</1>中文（Chinese），一般特指汉字</1></1>，即汉语的文字表达形式</2>。但</2>有时广义的</3>概念也有所扩展，即既包括书写</4>体系，也包括发音</4>体系。</1>中文的使用人数在15亿以上，范围包括中国（含香港、澳门、台湾地区）、新加坡、马来西亚、印度尼西亚、泰国、越南、柬埔寨、缅甸以及世界各地的华人社区。(</2</1>)"];
     
     emotionView.frame = CGRectMake(0, 0, 200, 200);
     [self.view addSubview:emotionView];
-    
-
-    double delayInSeconds = 5.0;
-    dispatch_time_t popTime = dispatch_time(DISPATCH_TIME_NOW, (int64_t)(delayInSeconds * NSEC_PER_SEC));
-    dispatch_after(popTime, dispatch_get_main_queue(), ^(void){
-        [emotionView removeFromSuperview];
-    });
 }
 
 @end

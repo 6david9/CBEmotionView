@@ -62,6 +62,7 @@
 - (void)dealloc
 {
     CFRelease(typesetter);
+    dispatch_release(group);    // iOS 6.0 以下需要手动释放
 }
 
 - (void)setup
@@ -112,8 +113,6 @@
         newRanges = [itemIndexes offsetRangesInArrayBy:[PlaceHolder length]];
     });
     
-    
-    dispatch_group_wait(group, DISPATCH_TIME_FOREVER);
     dispatch_group_notify(group, queue, ^{
         _emotionNames = names;
         _emotionRanges = newRanges;
