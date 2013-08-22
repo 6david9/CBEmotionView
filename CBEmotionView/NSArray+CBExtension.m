@@ -13,7 +13,6 @@
 - (NSArray *)offsetRangesInArrayBy:(NSUInteger)offset
 {
     NSUInteger aOffset = 0;
-    NSUInteger prevLocation = 0;
     NSUInteger prevLength = 0;
     
     
@@ -22,7 +21,6 @@
     {
         @autoreleasepool {
             NSRange range = [[self objectAtIndex:i] rangeValue];
-            prevLocation  = range.location;
             prevLength    = range.length;
             
             range.location -= aOffset;

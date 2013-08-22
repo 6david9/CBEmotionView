@@ -18,7 +18,7 @@
 #define AttributedImageNameKey      @"ImageName"
 
 #define EmotionImageWidth           15.0
-#define FontHeight                  13.0
+#define FontHeight                  15.0
 #define ImageLeftPadding            2.0
 #define ImageTopPadding             3.0
 
@@ -27,6 +27,16 @@
     dispatch_queue_t queue;
     dispatch_group_t group;
     CTTypesetterRef typesetter;
+}
+
+- (id)initWithCoder:(NSCoder *)aDecoder
+{
+    self = [super initWithCoder:aDecoder];
+    if (self) {
+        _emotionString = @"";
+        [self setup];
+    }
+    return self;
 }
 
 - (id)initWithFrame:(CGRect)frame
@@ -51,7 +61,7 @@
 
 - (void)dealloc
 {
-    _emotionString = nil;
+    CFRelease(typesetter);
 }
 
 - (void)setup
@@ -136,7 +146,7 @@
         NSRange range = [[ranges objectAtIndex:i] rangeValue];
         NSString *emotionName = [self.emotionNames objectAtIndex:i];
         [attrString addAttribute:AttributedImageNameKey value:emotionName range:range];
-        [attrString addAttribute:(NSString *)kCTRunDelegateAttributeName value:(__bridge id)newEmotionRunDelegate() range:range];
+        [attrString addAttribute:(NSString *)kCTRunDelegateAttributeName value:(__bridge_transfer id)newEmotionRunDelegate() range:range];
     }
     return attrString;
 }
@@ -172,7 +182,7 @@ void RunDelegateDeallocCallback( void* refCon )
 
 CGFloat RunDelegateGetAscentCallback( void *refCon )
 {
-    return 15.0;
+    return FontHeight;
 }
 
 CGFloat RunDelegateGetDescentCallback(void *refCon)
@@ -218,12 +228,16 @@ CGFloat RunDelegateGetWidthCallback(void *refCon)
         
         start += count;
         y -= 13.0 + 4.0;
+        
+        CFRelease(line);
     }
 
     // 恢复 context 信息
     CGContextRestoreGState(context);
 }
 
+
+// 翻转坐标系
 static inline
 void Flip_Context(CGContextRef context, CGFloat offset) // offset为字体的高度
 {
@@ -231,18 +245,7 @@ void Flip_Context(CGContextRef context, CGFloat offset) // offset为字体的高
     CGContextTranslateCTM(context, 0, -offset);
 }
 
-static inline
-CGPathRef Draw_Path_For_Frame(CGRect aFrame)
-{
-    CGMutablePathRef path = CGPathCreateMutable();
-    CGRect bounds = CGRectMake(aFrame.origin.x, aFrame.origin.y,
-                               aFrame.size.width, aFrame.size.height);
-    
-    CGPathAddRect(path, NULL, bounds);
-    
-    return path;
-}
-
+// 生成每个表情的 frame 坐标
 static inline
 CGPoint Emoji_Origin_For_Line(CTLineRef line, CGPoint lineOrigin, CTRunRef run)
 {
@@ -251,6 +254,8 @@ CGPoint Emoji_Origin_For_Line(CTLineRef line, CGPoint lineOrigin, CTRunRef run)
     return CGPointMake(x, y);
 }
 
+
+// 绘制每行中的表情
 void Draw_Emoji_For_Line(CGContextRef context, CTLineRef line, id owner, CGPoint lineOrigin)
 {
     CFArrayRef runs = CTLineGetGlyphRuns(line);
