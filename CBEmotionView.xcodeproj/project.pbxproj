@@ -47,6 +47,7 @@
 		086BD2AC17C48A8B00EBB51A /* 2.gif in Resources */ = {isa = PBXBuildFile; fileRef = 086BD2A817C48A8B00EBB51A /* 2.gif */; };
 		086BD2AD17C48A8B00EBB51A /* 3.gif in Resources */ = {isa = PBXBuildFile; fileRef = 086BD2A917C48A8B00EBB51A /* 3.gif */; };
 		086BD2AE17C48A8B00EBB51A /* 4.gif in Resources */ = {isa = PBXBuildFile; fileRef = 086BD2AA17C48A8B00EBB51A /* 4.gif */; };
+		08D729F717C5F32B004CDB17 /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 08D729F617C5F32B004CDB17 /* QuartzCore.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -146,6 +147,7 @@
 		086BD2A817C48A8B00EBB51A /* 2.gif */ = {isa = PBXFileReference; lastKnownFileType = image.gif; path = 2.gif; sourceTree = "<group>"; };
 		086BD2A917C48A8B00EBB51A /* 3.gif */ = {isa = PBXFileReference; lastKnownFileType = image.gif; path = 3.gif; sourceTree = "<group>"; };
 		086BD2AA17C48A8B00EBB51A /* 4.gif */ = {isa = PBXFileReference; lastKnownFileType = image.gif; path = 4.gif; sourceTree = "<group>"; };
+		08D729F617C5F32B004CDB17 /* QuartzCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuartzCore.framework; path = System/Library/Frameworks/QuartzCore.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -153,6 +155,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				08D729F717C5F32B004CDB17 /* QuartzCore.framework in Frameworks */,
 				086BD2A417C4709700EBB51A /* CoreText.framework in Frameworks */,
 				086BD21617C4580300EBB51A /* UIKit.framework in Frameworks */,
 				086BD21817C4580300EBB51A /* Foundation.framework in Frameworks */,
@@ -176,6 +179,7 @@
 		086BD20917C4580200EBB51A = {
 			isa = PBXGroup;
 			children = (
+				08D729F617C5F32B004CDB17 /* QuartzCore.framework */,
 				086BD21B17C4580300EBB51A /* CBEmotionView */,
 				086BD23F17C4580300EBB51A /* CBEmotionViewTests */,
 				086BD21417C4580300EBB51A /* Frameworks */,
@@ -688,6 +692,7 @@
 				086BD24C17C4580300EBB51A /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 		086BD24D17C4580300EBB51A /* Build configuration list for PBXNativeTarget "CBEmotionViewTests" */ = {
 			isa = XCConfigurationList;
@@ -696,6 +701,7 @@
 				086BD24F17C4580300EBB51A /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};

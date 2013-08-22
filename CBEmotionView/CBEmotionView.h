@@ -21,9 +21,6 @@ StrongProperty_r NSArray *emotionNames;
 
 StrongProperty_r NSArray *emotionRanges;
 
-// 表情图片缓存，用户保存表情图片在内存中
-StrongProperty_r NSCache *emotionCache;
-
 
 
 

@@ -23,6 +23,10 @@
 #define ImageTopPadding             3.0
 
 @implementation CBEmotionView
+{
+    dispatch_queue_t queue;
+    dispatch_group_t group;
+}
 
 - (id)initWithFrame:(CGRect)frame
 {
@@ -51,7 +55,9 @@
 
 - (void)setup
 {
-    _emotionCache = [[NSCache alloc] init];
+    queue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0);
+    group = dispatch_group_create();
+    
     [self prepare];
 }
 
@@ -68,37 +74,38 @@
     NSArray *itemIndexes = [CBRegularExpressionManager itemIndexesWithPattern:
                             EmotionItemPattern inString:_emotionString];
     
-    // 查找表情对应的字符串 并加载相应的表情图片到内存中
-    _emotionNames = [_emotionString itemsForPattern:EmotionItemPattern captureGroupIndex:1];
-    [self loadEmotions:_emotionNames];
+
+    __weak id target = self;
+    __block NSArray *names = nil;
+    __block NSString *newString = nil;
+    __block NSArray *newRanges = nil;
     
     
-    // 将 emotionString 中的特殊字符串替换为空格
-    NSString *newString = [_emotionString replaceCharactersAtIndexes:itemIndexes
-                                                     withString:PlaceHolder];
+    dispatch_group_async(group, queue, ^{
+        // 查找表情对应的字符串 并加载相应的表情图片到内存中
+        names = [_emotionString itemsForPattern:EmotionItemPattern captureGroupIndex:1];
+    });
+    dispatch_group_async(group, queue, ^{
+        // 将 emotionString 中的特殊字符串替换为空格
+        newString = [_emotionString replaceCharactersAtIndexes:itemIndexes
+                                                    withString:PlaceHolder];
+    });
+    dispatch_group_async(group, queue, ^{
+        // 新的表情的占位符的 range 数组
+        newRanges = [itemIndexes offsetRangesInArrayBy:[PlaceHolder length]];
+    });
     
-    // 新的表情的占位符的 range 数组
-    _emotionRanges = [itemIndexes offsetRangesInArrayBy:[PlaceHolder length]];
     
-    
-    _attrEmotionString = [self createAttributedEmotionStringWithRanges:_emotionRanges forString:newString];
+    dispatch_group_wait(group, DISPATCH_TIME_FOREVER);
+    dispatch_group_notify(group, queue, ^{
+        _emotionNames = names;
+        _emotionRanges = newRanges;
+        _attrEmotionString = [target createAttributedEmotionStringWithRanges:newRanges
+                                                                   forString:newString];
+    });
 }
 
 #pragma mark - Utility for emotions relative operations
-// 加载表情到内存中
-- (void)loadEmotions:(NSArray *)emotionNames
-{
-    NSAssert(_emotionNames != nil, @"emotionNames 不可以为 nil");
-    
-    for(NSInteger i = 0; i < [emotionNames count]; i++)
-    {
-        NSString *name = [emotionNames objectAtIndex:i];
-        NSString *path = [[NSBundle mainBundle] pathForResource:name ofType:EmotionFileType];
-        UIImage *emotionImg = [[UIImage alloc] initWithContentsOfFile:path];
-        [self.emotionCache setObject:emotionImg forKey:name];
-    }
-}
-
 // 根据调整后的字符串，生成绘图时使用的 attribute string
 - (NSAttributedString *)createAttributedEmotionStringWithRanges:(NSArray *)ranges
                                                       forString:(NSString*)aString
@@ -123,15 +130,8 @@
 // 通过表情名获得表情的图片
 - (UIImage *)getEmotionForKey:(NSString *)key
 {
-    UIImage *emotion = [self.emotionCache objectForKey:key];
-    
-    if ( !emotion )
-    {
-        NSString *path = [[NSBundle mainBundle] pathForResource:key ofType:EmotionFileType];
-        UIImage *emotionImg = [[UIImage alloc] initWithContentsOfFile:path];
-        [self.emotionCache setObject:emotionImg forKey:key];
-    }
-    return emotion;
+    // 使用系统缓存
+    return [UIImage imageNamed:key];
 }
 
 CTRunDelegateRef newEmotionRunDelegate()
@@ -175,6 +175,8 @@ CGFloat RunDelegateGetWidthCallback(void *refCon)
 #pragma mark - Drawing
 - (void)drawRect:(CGRect)rect
 {
+    CFTimeInterval start_t = CACurrentMediaTime();
+    
     CGContextRef context = UIGraphicsGetCurrentContext();
     CGContextSaveGState(context);
     
@@ -200,6 +202,9 @@ CGFloat RunDelegateGetWidthCallback(void *refCon)
         y -= 13.0 + 4.0;
     }
     CGContextRestoreGState(context);
+    
+    CFTimeInterval end_t = CACurrentMediaTime();
+    NSLog(@"drawrect: %f", end_t - start_t);
 }
 
 static inline
@@ -235,7 +240,6 @@ void Draw_Emoji_For_Line(CGContextRef context, CTLineRef line, id owner, CGPoint
     
     // 统计有多少个run
     NSUInteger count = CFArrayGetCount(runs);
-//    NSLog(@"count: %d", count);
     
     // 遍历查找表情run
     for(NSInteger i = 0; i < count; i++)
