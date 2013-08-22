@@ -62,6 +62,7 @@
 - (void)dealloc
 {
     CFRelease(typesetter);
+    dispatch_release(group);    // iOS 6.0 以下需要手动释放
 }
 
 - (void)setup
@@ -87,6 +88,7 @@
 #pragma mark - Cook the emotion string
 - (void)cookEmotionString
 {
+    CFTimeInterval startTime = CACurrentMediaTime();
     // 使用正则表达式查找特殊字符的位置
     NSArray *itemIndexes = [CBRegularExpressionManager itemIndexesWithPattern:
                             EmotionItemPattern inString:_emotionString];
@@ -112,8 +114,6 @@
         newRanges = [itemIndexes offsetRangesInArrayBy:[PlaceHolder length]];
     });
     
-    
-    dispatch_group_wait(group, DISPATCH_TIME_FOREVER);
     dispatch_group_notify(group, queue, ^{
         _emotionNames = names;
         _emotionRanges = newRanges;
@@ -127,6 +127,8 @@
             [target setNeedsDisplay];
         });
     });
+    CFTimeInterval endTime = CACurrentMediaTime();
+    NSLog(@"cookEmotionString: %f", endTime - startTime);
 }
 
 #pragma mark - Utility for emotions relative operations
