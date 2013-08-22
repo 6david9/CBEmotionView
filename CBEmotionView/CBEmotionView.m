@@ -26,6 +26,7 @@
 {
     dispatch_queue_t queue;
     dispatch_group_t group;
+    CTTypesetterRef typesetter;
 }
 
 - (id)initWithFrame:(CGRect)frame
@@ -64,6 +65,12 @@
 - (void)prepare
 {
     self.backgroundColor = [UIColor whiteColor];
+    
+    [UIImage imageNamed:@"1.gif"];
+    [UIImage imageNamed:@"2.gif"];
+    [UIImage imageNamed:@"3.gif"];
+    [UIImage imageNamed:@"4.gif"];
+    
     [self cookEmotionString];
 }
 
@@ -102,6 +109,13 @@
         _emotionRanges = newRanges;
         _attrEmotionString = [target createAttributedEmotionStringWithRanges:newRanges
                                                                    forString:newString];
+        // 创建typesetter 太耗费时间，所以在 typesetter 创建的时间提前到绘图前
+        typesetter = CTTypesetterCreateWithAttributedString((__bridge CFAttributedStringRef)
+                                               (_attrEmotionString));
+        
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [target setNeedsDisplay];
+        });
     });
 }
 
@@ -131,7 +145,7 @@
 - (UIImage *)getEmotionForKey:(NSString *)key
 {
     // 使用系统缓存
-    return [UIImage imageNamed:key];
+    return [UIImage imageNamed:[NSString stringWithFormat:@"%@.gif", key]];
 }
 
 CTRunDelegateRef newEmotionRunDelegate()
@@ -175,18 +189,17 @@ CGFloat RunDelegateGetWidthCallback(void *refCon)
 #pragma mark - Drawing
 - (void)drawRect:(CGRect)rect
 {
-    CFTimeInterval start_t = CACurrentMediaTime();
+    // 没有内容时取消本次绘制
+    if (!typesetter)   return;
     
+    CGFloat w = CGRectGetWidth(self.frame);
     CGContextRef context = UIGraphicsGetCurrentContext();
+    
+    // 保存 context 信息
     CGContextSaveGState(context);
     
     // 翻转坐标系
-    CGFloat w = CGRectGetWidth(self.frame);
     Flip_Context(context, FontHeight);
-
-    // 创建 CTTypeSetter
-    CTTypesetterRef typesetter = CTTypesetterCreateWithAttributedString(
-                                    (__bridge CFAttributedStringRef)(_attrEmotionString));
     
     CGFloat y = 0;
     CFIndex start = 0;
@@ -196,15 +209,19 @@ CGFloat RunDelegateGetWidthCallback(void *refCon)
         CFIndex count = CTTypesetterSuggestClusterBreak(typesetter, start, w);
         CTLineRef line = CTTypesetterCreateLine(typesetter, CFRangeMake(start, count));
         CGContextSetTextPosition(context, 0, y);
-        CTLineDraw(line, context);  // 画字
-        Draw_Emoji_For_Line(context, line, self, CGPointMake(0, y)); // 画图
+        
+        // 画字
+        CTLineDraw(line, context);  
+        
+        // 画表情
+        Draw_Emoji_For_Line(context, line, self, CGPointMake(0, y)); 
+        
         start += count;
         y -= 13.0 + 4.0;
     }
+
+    // 恢复 context 信息
     CGContextRestoreGState(context);
-    
-    CFTimeInterval end_t = CACurrentMediaTime();
-    NSLog(@"drawrect: %f", end_t - start_t);
 }
 
 static inline
@@ -253,11 +270,10 @@ void Draw_Emoji_For_Line(CGContextRef context, CTLineRef line, id owner, CGPoint
             CGRect imageRect = CGRectZero;
             imageRect.origin = Emoji_Origin_For_Line(line, lineOrigin, aRun);
             imageRect.size = CGSizeMake(EmotionImageWidth, EmotionImageWidth);
-            CGContextDrawImage(context, imageRect, [[owner getEmotionForKey:emojiName] CGImage]);
+            CGImageRef img = [[owner getEmotionForKey:emojiName] CGImage];
+            CGContextDrawImage(context, imageRect, img);
         }
     }
 }
-
-
 
 @end

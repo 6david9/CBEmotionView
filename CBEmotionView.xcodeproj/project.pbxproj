@@ -179,7 +179,6 @@
 		086BD20917C4580200EBB51A = {
 			isa = PBXGroup;
 			children = (
-				08D729F617C5F32B004CDB17 /* QuartzCore.framework */,
 				086BD21B17C4580300EBB51A /* CBEmotionView */,
 				086BD23F17C4580300EBB51A /* CBEmotionViewTests */,
 				086BD21417C4580300EBB51A /* Frameworks */,
@@ -199,6 +198,7 @@
 		086BD21417C4580300EBB51A /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				08D729F617C5F32B004CDB17 /* QuartzCore.framework */,
 				086BD2A317C4709700EBB51A /* CoreText.framework */,
 				086BD21517C4580300EBB51A /* UIKit.framework */,
 				086BD21717C4580300EBB51A /* Foundation.framework */,
