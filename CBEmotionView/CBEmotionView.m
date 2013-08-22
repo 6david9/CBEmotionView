@@ -176,6 +176,7 @@ CGFloat RunDelegateGetWidthCallback(void *refCon)
 - (void)drawRect:(CGRect)rect
 {
     CGContextRef context = UIGraphicsGetCurrentContext();
+    CGContextSaveGState(context);
     
     // 翻转坐标系
     CGFloat w = CGRectGetWidth(self.frame);
@@ -198,6 +199,7 @@ CGFloat RunDelegateGetWidthCallback(void *refCon)
         start += count;
         y -= 13.0 + 4.0;
     }
+    CGContextRestoreGState(context);
 }
 
 static inline
