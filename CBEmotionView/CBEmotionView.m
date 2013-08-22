@@ -16,8 +16,9 @@
 #define PlaceHolder                 @" "
 #define EmotionFileType             @"gif"
 #define AttributedImageNameKey      @"ImageName"
-#define EmotionImageWidth           15.0
 
+#define EmotionImageWidth           15.0
+#define FontHeight                  13.0
 #define ImageLeftPadding            2.0
 #define ImageTopPadding             3.0
 
@@ -177,60 +178,80 @@ CGFloat RunDelegateGetWidthCallback(void *refCon)
     CGContextRef context = UIGraphicsGetCurrentContext();
     
     // 翻转坐标系
-    CGFloat h = CGRectGetHeight(self.bounds);
-    CGContextScaleCTM(context, 1, -1);
-    CGContextTranslateCTM(context, 0, -h);
+    CGFloat w = CGRectGetWidth(self.frame);
+    Flip_Context(context, FontHeight);
+
+    // 创建 CTTypeSetter
+    CTTypesetterRef typesetter = CTTypesetterCreateWithAttributedString(
+                                    (__bridge CFAttributedStringRef)(_attrEmotionString));
     
-    // 生成绘图路径
+    CGFloat y = 0;
+    CFIndex start = 0;
+    NSInteger length = [_attrEmotionString length];
+    while (start < length)
+    {
+        CFIndex count = CTTypesetterSuggestClusterBreak(typesetter, start, w);
+        CTLineRef line = CTTypesetterCreateLine(typesetter, CFRangeMake(start, count));
+        CGContextSetTextPosition(context, 0, y);
+        CTLineDraw(line, context);  // 画字
+        Draw_Emoji_For_Line(context, line, self, CGPointMake(0, y)); // 画图
+        start += count;
+        y -= 13.0 + 4.0;
+    }
+}
+
+static inline
+void Flip_Context(CGContextRef context, CGFloat offset) // offset为字体的高度
+{
+    CGContextScaleCTM(context, 1, -1);
+    CGContextTranslateCTM(context, 0, -offset);
+}
+
+static inline
+CGPathRef Draw_Path_For_Frame(CGRect aFrame)
+{
     CGMutablePathRef path = CGPathCreateMutable();
-    CGRect bounds = CGRectMake(self.bounds.origin.x, self.bounds.origin.y,
-                               self.bounds.size.width, self.bounds.size.height);
+    CGRect bounds = CGRectMake(aFrame.origin.x, aFrame.origin.y,
+                               aFrame.size.width, aFrame.size.height);
+    
     CGPathAddRect(path, NULL, bounds);
     
-    // Frame setter
-    CTFramesetterRef ctFramesetter =
-        CTFramesetterCreateWithAttributedString((__bridge CFMutableAttributedStringRef)_attrEmotionString);
+    return path;
+}
+
+static inline
+CGPoint Emoji_Origin_For_Line(CTLineRef line, CGPoint lineOrigin, CTRunRef run)
+{
+    CGFloat x = lineOrigin.x + CTLineGetOffsetForStringIndex(line, CTRunGetStringRange(run).location, NULL) + ImageLeftPadding;
+    CGFloat y = lineOrigin.y - ImageTopPadding;
+    return CGPointMake(x, y);
+}
+
+void Draw_Emoji_For_Line(CGContextRef context, CTLineRef line, id owner, CGPoint lineOrigin)
+{
+    CFArrayRef runs = CTLineGetGlyphRuns(line);
     
-    // 画字
-    CTFrameRef ctFrame = CTFramesetterCreateFrame(ctFramesetter,CFRangeMake(0, 0), path, NULL);
-    CTFrameDraw(ctFrame, context);
+    // 统计有多少个run
+    NSUInteger count = CFArrayGetCount(runs);
+//    NSLog(@"count: %d", count);
     
-    // 画表情
-    CFArrayRef lines = CTFrameGetLines(ctFrame);
-    CGPoint lineOrigins[CFArrayGetCount(lines)];        // 每个 line 的起始坐标
-    CTFrameGetLineOrigins(ctFrame, CFRangeMake(0, 0), lineOrigins);
-    
-    for (int i = 0; i < CFArrayGetCount(lines); i++) {
-        CTLineRef line = CFArrayGetValueAtIndex(lines, i);
-        CGFloat lineAscent;     // 上行距
-        CGFloat lineDescent;    // 下行距
-        CGFloat lineLeading;    // 行间距
-        CTLineGetTypographicBounds(line, &lineAscent, &lineDescent, &lineLeading);
-        
-        CFArrayRef runs = CTLineGetGlyphRuns(line);
-        for (int j = 0; j < CFArrayGetCount(runs); j++) {
-            CGPoint lineOrigin = lineOrigins[i];
-            CTRunRef run = CFArrayGetValueAtIndex(runs, j);
-            NSDictionary* attributes = (__bridge NSDictionary*)CTRunGetAttributes(run);
-            
-            NSString *imageName = [attributes objectForKey:AttributedImageNameKey];
-            //图片渲染逻辑
-            if (imageName)
-            {
-                CGFloat runOriginX = lineOrigin.x + CTLineGetOffsetForStringIndex(line, CTRunGetStringRange(run).location, NULL);
-                
-                UIImage *image = [self getEmotionForKey:imageName];
-                if (image) {
-                    CGRect imageDrawRect;
-                    imageDrawRect.size = CGSizeMake(EmotionImageWidth, EmotionImageWidth);
-                    imageDrawRect.origin.x = runOriginX + lineOrigin.x + ImageLeftPadding;
-                    imageDrawRect.origin.y = lineOrigin.y - ImageTopPadding;
-                    CGContextDrawImage(context, imageDrawRect, image.CGImage);
-                }
-            }
+    // 遍历查找表情run
+    for(NSInteger i = 0; i < count; i++)
+    {
+        CTRunRef aRun = CFArrayGetValueAtIndex(runs, i);
+        CFDictionaryRef attributes = CTRunGetAttributes(aRun);
+        NSString *emojiName = (NSString *)CFDictionaryGetValue(attributes, AttributedImageNameKey);
+        if (emojiName)
+        {
+            // 画表情
+            CGRect imageRect = CGRectZero;
+            imageRect.origin = Emoji_Origin_For_Line(line, lineOrigin, aRun);
+            imageRect.size = CGSizeMake(EmotionImageWidth, EmotionImageWidth);
+            CGContextDrawImage(context, imageRect, [[owner getEmotionForKey:emojiName] CGImage]);
         }
     }
 }
+
 
 
 @end
