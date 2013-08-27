@@ -88,6 +88,7 @@
 #pragma mark - Cook the emotion string
 - (void)cookEmotionString
 {
+    CFTimeInterval startTime = CACurrentMediaTime();
     // 使用正则表达式查找特殊字符的位置
     NSArray *itemIndexes = [CBRegularExpressionManager itemIndexesWithPattern:
                             EmotionItemPattern inString:_emotionString];
@@ -126,6 +127,8 @@
             [target setNeedsDisplay];
         });
     });
+    CFTimeInterval endTime = CACurrentMediaTime();
+    NSLog(@"cookEmotionString: %f", endTime - startTime);
 }
 
 #pragma mark - Utility for emotions relative operations
